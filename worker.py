@@ -3,6 +3,28 @@ import sys
 import threading
 import time
 
+
+"""
+
+bind\unbind functions not tested
+
+def bind(routing_key):
+    workers_channel.queue_bind(exchange='workers',
+                               queue=workers_queue_name,
+                               routing_key=routing_key)
+
+def unbind(routing_key):
+    workers_channel.queue_unbind(exchange='workers',
+                               queue=workers_queue_name,
+                               routing_key=routing_key)
+
+def bind_neighbours(neighbours):
+    for neighbour in neighbours:
+        bind(neighbour)
+"""
+
+args = sys.argv[1:]
+
 # connection object to rabbitmq server
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 
@@ -19,12 +41,12 @@ control_queue_name = control_result.method.queue
 # bind worker to exchange
 control_channel.queue_bind(exchange='control',
                    queue=control_queue_name,
-                   routing_key="worker1")
+                   routing_key=args[0])
 
 
 # channel for worker to worker communication
 workers_channel = connection.channel()
-workers_channel.exchange_declare(exchange='control',
+workers_channel.exchange_declare(exchange='workers',
                          exchange_type='topic')
 
 # declare workers queue
@@ -42,6 +64,8 @@ control_channel.basic_consume(control_callback,
 
 # user to worker communication consumer thread
 
+binding_keys = sys.argv[1:]
+print(binding_keys)
 
 def consume_control():
     control_channel.start_consuming()
