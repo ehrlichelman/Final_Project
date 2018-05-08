@@ -1,5 +1,6 @@
 # to do:
 
+add connection object to prevent multiple threads using the same connection
 add thread to worker to consume inter-workers communication  
 add arguments to workers for routing_key and neighbours list  
   
