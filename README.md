@@ -2,6 +2,7 @@
 
 
 immediate goals:  
+add manager module  
 define control interface and implement it -in work     
 test bind\unbind functions after inter-workers communication test is passed  
 
