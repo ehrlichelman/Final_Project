@@ -3,9 +3,28 @@ import sys
 import threading
 import time
 
-
-
 args = sys.argv[1:]
+
+worker_queue_key = args[0]
+
+def bind(routing_key):
+    workers_channel.queue_bind(exchange='workers',
+                               queue=workers_queue_name,
+                               routing_key=routing_key)
+
+def unbind(routing_key):
+    workers_channel.queue_unbind(exchange='workers',
+                               queue=workers_queue_name,
+                               routing_key=routing_key)
+
+def bind_neighbours(neighbours):
+    for neighbour in neighbours:
+        bind(neighbour)
+
+def send(routing_key, message):
+    workers_channel.basic_publish(exchange='workers',
+                          routing_key=routing_key,
+                          body=message)
 
 
 def create_connection():
@@ -44,32 +63,59 @@ workers_queue_name = workers_result.method.queue
 # workers_queue_name = workers_result.method.queue
 
 
+
+
+
+
 def control_callback(ch, method, properties, body):
     print(" [x] %r:%r" % (method.routing_key, body))
+    if body.decode() == "send":
+        send(args[0],"this is a message from worker to worker")
+        print("sned message from: ", args[0])
 
+def workers_callback(ch, method, properties, body):
+    print(" [x] %r:%r" % (method.routing_key, body))
 
 control_channel.basic_consume(control_callback,
                       queue=control_queue_name,
                       no_ack=True)
 
+
+workers_channel.basic_consume(workers_callback,
+                      queue=workers_queue_name,
+                      no_ack=True)
+
+
 # user to worker communication consumer thread
 
-binding_keys = sys.argv[1:]
-print(binding_keys)
+binding_keys = args[1:]
+print("neighbours:", binding_keys)
+
+bind_neighbours(binding_keys)
+
 
 def consume_control():
     control_channel.start_consuming()
 
-# worker to worker communication consumer thread
-# def run_workers():
+def consume_workers():
+    workers_channel.start_consuming()
 
 
 control_thread = threading.Thread(target=consume_control)
 control_thread.start()
 
+workers_thread = threading.Thread(target=consume_workers)
+workers_thread.start()
 
 while True:
     time.sleep(3)
     print("working...")
+
+
+
+
+
+
+
 
 
