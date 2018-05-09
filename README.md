@@ -2,9 +2,9 @@
 
 
 immediate goals:  
-add manager module  
 define control interface and implement it -in work     
 test bind\unbind functions after inter-workers communication test is passed  
+document manager module  
 
 intermediate goals:  
 add message processing in workers_consume  -in work  
@@ -24,6 +24,7 @@ done:
 * add connection object to prevent multiple threads using the same connection  
 * add thread to worker to consume inter-workers communication and test it 
 * add arguments to workers for routing_key and neighbours list  
+* add manager module
 
 # usage:  
 
