@@ -19,8 +19,7 @@ add error handling
 add logging module  
 
 done:  
-29
-* set up devices: python3 worker.py <worker name> <neighbour1> <neighbour2> ..
+
 * add connection object to prevent multiple threads using the same connection  
 * add thread to worker to consume inter-workers communication and test it 
 * add arguments to workers for routing_key and neighbours list  
