@@ -68,13 +68,33 @@ workers_queue_name = workers_result.method.queue
 
 
 def control_callback(ch, method, properties, body):
-    print(" [x] %r:%r" % (method.routing_key, body))
+    message = body.decode()
+    message = message.split()
+
+    if message[0] == 'send':
+
+        send(args[0],' '.join(message[1:]))
+        print("sent with routing_key: ", args[0])
+        print("message: ",' '.join(message[1:]))
+    else:
+        print(" [x] %r:%r" % (method.routing_key, body))
+
+"""
     if body.decode() == "send":
         send(args[0],"this is a message from worker to worker")
         print("sned message from: ", args[0])
+"""
 
 def workers_callback(ch, method, properties, body):
     print(" [x] %r:%r" % (method.routing_key, body))
+
+    message = body.decode()
+    message = message.split()
+
+    if message[0] == args[0]: #message is for me:
+        print("received a message for me!")
+    else:
+        print("this message is not for me: ", ' '.join(message))
 
 control_channel.basic_consume(control_callback,
                       queue=control_queue_name,
@@ -110,6 +130,11 @@ workers_thread.start()
 while True:
     time.sleep(3)
     print("working...")
+
+
+
+
+
 
 
 
