@@ -23,15 +23,17 @@ def send(routing_key, message):
 
 while True:
     inputx = input(">>>: ")
-    print(type(inputx))
     inputx = inputx.split()
-
+    print(inputx)
     if inputx[0] == "quit":
         break
-    if inputx[0] == "send":
-        routing_key = inputx[1]
-        msg = inputx[2]
-        send(routing_key, msg)
+
+    #message format: <worker_source> send <worker_destination> <message>
+
+    routing_key = inputx[0]
+    msg = ' '.join(inputx[1:])
+    print(msg)
+    send(routing_key, msg)
 
 
 
