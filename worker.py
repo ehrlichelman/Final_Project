@@ -4,35 +4,21 @@ import threading
 import time
 
 
-"""
-
-bind\unbind functions not tested
-
-def bind(routing_key):
-    workers_channel.queue_bind(exchange='workers',
-                               queue=workers_queue_name,
-                               routing_key=routing_key)
-
-def unbind(routing_key):
-    workers_channel.queue_unbind(exchange='workers',
-                               queue=workers_queue_name,
-                               routing_key=routing_key)
-
-def bind_neighbours(neighbours):
-    for neighbour in neighbours:
-        bind(neighbour)
-"""
 
 args = sys.argv[1:]
 
-# connection object to rabbitmq server
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 
-# channel for user to worker communication
-control_channel = connection.channel()
-control_channel.exchange_declare(exchange='control',
-                         exchange_type='topic')
+def create_connection():
+    return pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 
+def create_channel(connection, exchange_name, exchange_type):
+    channel = connection.channel()
+    channel.exchange_declare(exchange=exchange_name,
+                         exchange_type=exchange_type)
+    return channel
+
+control_connection = create_connection()
+control_channel = create_channel(control_connection,'control','topic')
 
 # declare control queue
 control_result = control_channel.queue_declare(exclusive=True)
@@ -43,15 +29,19 @@ control_channel.queue_bind(exchange='control',
                    queue=control_queue_name,
                    routing_key=args[0])
 
+workers_connection = create_connection()
+workers_channel = create_channel(workers_connection,'workers','topic')
 
 # channel for worker to worker communication
-workers_channel = connection.channel()
+workers_channel = workers_connection.channel()
 workers_channel.exchange_declare(exchange='workers',
                          exchange_type='topic')
 
 # declare workers queue
 workers_result = workers_channel.queue_declare(exclusive=True)
 workers_queue_name = workers_result.method.queue
+
+# workers_queue_name = workers_result.method.queue
 
 
 def control_callback(ch, method, properties, body):
@@ -81,8 +71,5 @@ control_thread.start()
 while True:
     time.sleep(3)
     print("working...")
-
-
-
 
 
