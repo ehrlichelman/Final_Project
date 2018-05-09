@@ -28,7 +28,7 @@ done:
 # usage:  
 
 * run user cli interface: python3 send.py  
-* set up devices: python3 worker.py <worker name> <neighbour1> <neighbour2> ..  
-* send a message to a worker: <worker name> <message>  
-* send a worker a 'send' command: <worker source> send <worker destination> <message>
+* set up devices: python3 worker.py '<worker name'> '<neighbour1'> '<neighbour2'> ..  
+* send a message to a worker: '<worker name'> '<message'>  
+* send a worker a 'send' command: '<worker source'> send '<worker destination'> '<message'>
 
