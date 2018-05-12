@@ -26,7 +26,7 @@ done:
 * add thread to worker to consume inter-workers communication and test it 
 * add arguments to workers for routing_key and neighbours list  
 * add manager module
-
+* add dictionary database with basic add / remove functions
 
 
 # usage:  
