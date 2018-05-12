@@ -4,10 +4,13 @@ import threading
 import time
 import manager
 
-args = sys.argv[1:]
-manager.worker_routing_key=args[0]
 
-manager.run()
+args = sys.argv[1:]
+#manager.worker_routing_key=args[0]
+
+#manager.run()
+
+manager = manager.connectionmanager(args[0])
 
 binding_keys = args[1:]
 print("neighbours:", binding_keys)

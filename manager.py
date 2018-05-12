@@ -1,98 +1,111 @@
 import pika
 
 
+class connectionmanager:
 
-def create_connection():
-    return pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    # initialize connection to control and worker exchange
+    def __init__(self, worker_routing_key):
+        #self.workers_channel = None
+        #self.control_channel = None
+        #self.workers_queue_name = None
+        self.worker_routing_key = worker_routing_key
 
-def create_channel(connection, exchange_name, exchange_type):
-    channel = connection.channel()
-    channel.exchange_declare(exchange=exchange_name,
-                         exchange_type=exchange_type)
-    return channel
-
-def control_callback(ch, method, properties, body):
-    message = body.decode()
-    message = message.split()
-    print("im here")
-    if message[0] == 'send':
-
-        send(worker_routing_key,' '.join(message[1:]))
-        print("sent with routing_key: ", worker_routing_key)
-        print("message: ",' '.join(message[1:]))
-    else:
-        print(" [x] %r:%r" % (method.routing_key, body))
-
-
-def workers_callback(ch, method, properties, body):
-    print(" [x] %r:%r" % (method.routing_key, body))
-
-    message = body.decode()
-    message = message.split()
-
-    if message[0] == worker_routing_key: #message is for me:
-        print("received a message for me!")
-    else:
-        print("this message is not for me: ", ' '.join(message))
-
-worker_routing_key=""
-
-def run():
-    if __name__ == "manager":
-
-        global workers_channel
-        global control_channel
-        global workers_queue_name
-
-        control_connection = create_connection()
-        control_channel = create_channel(control_connection,'control','topic')
+        # control TCP connection to MQ server
+        self.control_connection = self.create_connection()
+        self.control_channel = self.create_channel(self.control_connection, 'control', 'topic')
 
         # declare control queue
-        control_result = control_channel.queue_declare(exclusive=True)
-        control_queue_name = control_result.method.queue
+        control_result = self.control_channel.queue_declare(exclusive=True)
+        self.control_queue_name = control_result.method.queue
 
-        # bind worker to exchange
-        control_channel.queue_bind(exchange='control',
-                       queue=control_queue_name,
-                       routing_key=worker_routing_key)
+        # bind worker to control exchange
+        self.control_channel.queue_bind(exchange='control',
+                                   queue=self.control_queue_name,
+                                   routing_key=worker_routing_key)
 
-        workers_connection = create_connection()
-        workers_channel = create_channel(workers_connection,'workers','topic')
+        # workers TCP connection to MQ server
+        self.workers_connection = self.create_connection()
+        self.workers_channel = self.create_channel(self.workers_connection, 'workers', 'topic')
 
         # channel for worker to worker communication
-        workers_channel = workers_connection.channel()
-        workers_channel.exchange_declare(exchange='workers',
+        self.workers_channel = self.workers_connection.channel()
+        self.workers_channel.exchange_declare(exchange='workers',
                                          exchange_type='topic')
 
         # declare workers queue
-        workers_result = workers_channel.queue_declare(exclusive=True)
-        workers_queue_name = workers_result.method.queue
+        self.workers_result = self.workers_channel.queue_declare(exclusive=True)
+        self.workers_queue_name = self.workers_result.method.queue
 
-        control_channel.basic_consume(control_callback,
-                          queue=control_queue_name,
-                          no_ack=True)
+        self.control_channel.basic_consume(self.control_callback,
+                                      queue=self.control_queue_name,
+                                      no_ack=True)
 
+        self.workers_channel.basic_consume(self.workers_callback,
+                                      queue=self.workers_queue_name,
+                                      no_ack=True)
 
-        workers_channel.basic_consume(workers_callback,
-                          queue=workers_queue_name,
-                          no_ack=True)
-
-def bind(routing_key):
-    workers_channel.queue_bind(exchange='workers',
-                               queue=workers_queue_name,
-                               routing_key=routing_key)
-
-def unbind(routing_key):
-    workers_channel.queue_unbind(exchange='workers',
-                               queue=workers_queue_name,
-                               routing_key=routing_key)
-
-def bind_neighbours(neighbours):
-    for neighbour in neighbours:
-        bind(neighbour)
+    def create_connection(self):
+        return pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 
 
-def send(routing_key, message):
-    workers_channel.basic_publish(exchange='workers',
-                          routing_key=routing_key,
-                          body=message)
+    def create_channel(self,connection, exchange_name, exchange_type):
+        channel = connection.channel()
+        channel.exchange_declare(exchange=exchange_name,
+                             exchange_type=exchange_type)
+        return channel
+
+
+    # callback for user-worker communication
+    def control_callback(self,ch, method, properties, body):
+        message = body.decode()
+        message = message.split()
+        print("im here")
+        if message[0] == 'send':
+
+            self.send(self.worker_routing_key,' '.join(message[1:]))
+            print("sent with routing_key: ", self.worker_routing_key)
+            print("message: ",' '.join(message[1:]))
+        else:
+            print(" [x] %r:%r" % (method.routing_key, body))
+
+
+    # callback for worker-worker communication
+    def workers_callback(self,ch, method, properties, body):
+        print(" [x] %r:%r" % (method.routing_key, body))
+
+        message = body.decode()
+        message = message.split()
+
+        if message[0] == self.worker_routing_key: #message is for me:
+            print("received a message for me!")
+        else:
+            print("this message is not for me: ", ' '.join(message))
+
+    # bind worker to neighbour queue
+    def bind(self,routing_key):
+        self.workers_channel.queue_bind(exchange='workers',
+                                   queue=self.workers_queue_name,
+                                   routing_key=routing_key)
+
+
+    # unbind worker from neighbout queue
+    def unbind(self,routing_key):
+        self.workers_channel.queue_unbind(exchange='workers',
+                                   queue=self.workers_queue_name,
+                                   routing_key=routing_key)
+
+
+    # bind worker to a list of neighbours
+    def bind_neighbours(self,neighbours):
+        for neighbour in neighbours:
+            self.bind(neighbour)
+
+    def send(self,routing_key, message):
+        self.workers_channel.basic_publish(exchange='workers',
+                                    routing_key=routing_key,
+                                    body=message)
+
+
+
+
+
