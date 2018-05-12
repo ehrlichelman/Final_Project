@@ -17,6 +17,8 @@ replace if-then-else pattern in sender command menu
 replace if-then-else pattern in worker action menu and add basic functionality  
 add error handling  
 add logging module  
+connection manager base class  
+
 
 done:  
 
