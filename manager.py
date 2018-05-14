@@ -57,20 +57,35 @@ class connectionmanager:
 
     # callback for user-worker communication
     def control_callback(self,ch, method, properties, body):
+
         message = body.decode()
         message = message.split()
         print("im here")
         if message[0] == 'send':
 
+
             self.send(self.worker_routing_key,' '.join(message[1:]))
             print("sent with routing_key: ", self.worker_routing_key)
             print("message: ",' '.join(message[1:]))
+
+
+            #self.executor(' '.join(message[1:]), self.basic_strategy)
+
         else:
             print(" [x] %r:%r" % (method.routing_key, body))
 
 
     # callback for worker-worker communication
     def workers_callback(self,ch, method, properties, body):
+
+        message = body.decode()
+        message = message.split()
+
+        self.executor(message, self.basic_strategy)
+
+
+
+        """
         print(" [x] %r:%r" % (method.routing_key, body))
 
         message = body.decode()
@@ -80,6 +95,8 @@ class connectionmanager:
             print("received a message for me!")
         else:
             print("this message is not for me: ", ' '.join(message))
+
+        """
 
     # bind worker to neighbour queue
     def bind(self,routing_key):
@@ -105,7 +122,46 @@ class connectionmanager:
                                     routing_key=routing_key,
                                     body=message)
 
+    # strategy test
+    def executor(self,message,func=None):
+        if func:
+            func(message)
+        else:
+            print("strategy not set")
+
+    def ignore_strategy(self,message):
+        print("received message, ",message)
+        print("ignore strategy")
+
+    def forward_strategy(self,message):
+        print("received message, ", message)
+        print("now forwarding message to neighbours")
+        self.send(self.routing_key, message)
+
+    def basic_strategy(self, message):
+        if message[0] == self.worker_routing_key: #message is for me:
+            print("received a message for me!", message)
+        else:
+            print("this message is not for me: ", ' '.join(message))
+            print("forwarding message to neighbours")
+            self.send(self.worker_routing_key, ' '.join(message))
 
 
 
 
+
+
+
+
+        # change "worker_routing_key" to a more informative name.
+
+        """
+        def executor(self, message, func=None):
+            if func is None:
+            print("function not defined")
+        else:
+            func()
+
+        def addition(self, arg1):
+        print(arg1)
+        """
