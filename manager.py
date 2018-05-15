@@ -35,23 +35,7 @@ class worker_manager(manager):
 
 
     def callback(self,ch, method, properties, body):
-
-        # print(" [x] %r:%r" % (method.routing_key, body))
-
-        # message = body.decode()
-        # message = message.split()
-
-        message = pickle.loads(body)
-        print("received:")
-        print(message)
-
-
-        """
-        if message[0] == self.routing_key: #message is for me:
-            print("received a message for me!")
-        else:
-            print("this message is not for me: ", ' '.join(message))
-        """
+        self.executor(pickle.loads(body), self.basic_strategy)
 
 
     # bind worker to neighbour queue
@@ -73,11 +57,25 @@ class worker_manager(manager):
         for neighbour in neighbours:
             self.bind(neighbour)
 
-    """
-    def executor(self,message, func=basic_strategy):
-        if func is None:
+
+    def executor(self, message, strategy=None):
+        if strategy:
+            strategy(message)
+        else:
             print("strategy not set")
-    """
+
+
+    def basic_strategy(self,message):
+        if message['destination']==self.routing_key:
+            print("received message:")
+            print(message)
+        else:
+            if message['TTL'] > 0:
+                print("message is not for me. decreasing TTL and forwarding.")
+                message['TTL']-=1
+                self.send(self.routing_key, pickle.dumps(message) ,'workers')
+            else:
+                print("TTL equals zero, dropping message")
 
 class control_manager(manager):
     def __init__(self,mq_server_address, exchange_name, exchange_type, routing_key):
@@ -99,8 +97,8 @@ class control_manager(manager):
             # message serialization test
 
             msg = {'source':self.routing_key,
-                   'destination':'dummy_destination',
-                   'TTL':10,
+                   'destination':message[1],
+                   'TTL':3,
                    'data':' '.join(message[1:])}
 
             print("sending:")
@@ -110,14 +108,6 @@ class control_manager(manager):
             msg=pickle.dumps(msg)
 
             self.send(self.routing_key,msg,'workers')
-
-
-            """
-            self.send(self.routing_key,' '.join(message[1:]),"workers")
-            print("sent with routing_key: ", self.routing_key)
-            print("message: ",' '.join(message[1:]))
-            """
-
 
         else:
             print(" [x] %r:%r" % (method.routing_key, body))
