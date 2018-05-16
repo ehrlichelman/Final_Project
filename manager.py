@@ -33,7 +33,6 @@ class worker_manager(manager):
     def __init__(self,mq_server_address, exchange_name, exchange_type, routing_key):
         super(worker_manager, self).__init__(mq_server_address, exchange_name, exchange_type, routing_key)
 
-
     def callback(self,ch, method, properties, body):
         self.executor(pickle.loads(body), self.basic_strategy)
 
@@ -77,20 +76,25 @@ class worker_manager(manager):
             else:
                 print("TTL equals zero, dropping message")
 
+
 class control_manager(manager):
     def __init__(self,mq_server_address, exchange_name, exchange_type, routing_key):
         super(control_manager, self).__init__(mq_server_address, exchange_name, exchange_type, routing_key)
+        self.kill = False
 
         # bind worker to control exchange
         self.channel.queue_bind(exchange=self.exchange_name,
                                 queue=self.queue_name,
                                 routing_key=self.routing_key)
 
+        #self.menudict = {''}
 
     def callback(self,ch, method, properties, body):
         message = body.decode()
         message = message.split()
         print("im here")
+        if message[0] == 'kill':
+            self.kill = True
         if message[0] == 'send':
 
 
