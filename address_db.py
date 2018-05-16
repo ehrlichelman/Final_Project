@@ -1,9 +1,13 @@
 import redis
 import random
+import logging
+
+logging.basicConfig(filename="debug.log", level=logging.DEBUG)
 
 
 class AddressDictionary:
     def __init__(self):
+        logging.debug('Initializing list of 3 bytes addresses: ')
         self.redis_db = redis.Redis(host="localhost", port=6379, db=0)
         for i in range(100):
             rand_addr = ''.join(random.choice('0123456789ABCDEF') for i in range(3))
@@ -13,11 +17,18 @@ class AddressDictionary:
         addr = self.redis_db.srandmember('addr_list')
         self.redis_db.srem('addr_list', addr)
         self.redis_db.set(name, addr)
+        logging.debug('New device added, id: {} '
+                      'address: {}'.format(name, str(addr)[2:-1]))
 
+    # remove device from network
     def remove_name(self, name):
         addr = self.redis_db.get(name)
+        # disconnect node from neighbours
+        self.remove_node_neighbours(addr)
         self.redis_db.delete(name)
         self.redis_db.sadd('addr_list', addr)
+        logging.debug('Device removed, id: {} '
+                      'address: {}'.format(name, str(addr)[2:-1]))
 
     # returns node address
     def value_by_name(self, name):
@@ -37,11 +48,14 @@ class AddressDictionary:
     def add_node_neighbour(self, node, neighbour):
         self.redis_db.sadd(node, neighbour)
         self.print_node_neighbours(node)
+        logging.debug('Added neighbour for node: {}, neighbour: {} '.format(node, neighbour))
 
     # remove connecting edge between nodes
     def remove_edge(self, node, neighbour):
         self.redis_db.srem(node, neighbour)
         self.redis_db.srem(neighbour, node)
+        logging.debug('Removed neighbour for node: {}, neighbour: {} '.format(node, neighbour))
+        logging.debug('Removed neighbour for node: {}, neighbour: {} '.format(neighbour, node))
 
     # disconnect node from all neighbours
     def remove_node_neighbours(self, node):
@@ -59,6 +73,7 @@ class AddressDictionary:
 
     def drop_db(self):
         self.redis_db.flushall()
+        logging.debug('Dropped database...')
 
 
 if __name__ == '__main__':
@@ -82,5 +97,6 @@ if __name__ == '__main__':
             neighbour = input('enter neighbour address:')
             redis_data.remove_edge(node, neighbour)
         else:
+            redis_data.drop_db()
             break
 

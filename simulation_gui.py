@@ -23,9 +23,6 @@ class MapIcon(QGraphicsPixmapItem):
     def mousePressEvent(self, e):
         if e.button() == Qt.RightButton and self.isSelected():
             print("Right mouse pressed")
-            ex.vScene.removeItem(self)
-            addresses.remove_name(str(id(self)))
-        else:
             self.setFlag(QGraphicsItem.ItemIsMovable, True)
             print("selected")
             for item in ex.vScene.items():
@@ -33,6 +30,8 @@ class MapIcon(QGraphicsPixmapItem):
                     self.setFlag(QGraphicsItem.ItemIsMovable, False)
                     print("COLLISION!")
                     return
+            ex.vScene.removeItem(self)
+            addresses.remove_name(str(id(self)))
 
     def mouseDoubleClickEvent(self, *args, **kwargs):
         self.getNeighboursList()
@@ -48,18 +47,15 @@ class MapIcon(QGraphicsPixmapItem):
         for item in ex.vScene.items():
             if self.collidesWithItem(item) and self != item:
                 # add neighbour to list
-                #address = addresses.value_by_name(str(id(item)))
-                #print("Found new neighbour: " + str(address))
                 self.neighbours.append(id(item))
 
         for x in self.neighbours:
             addr_list.append(addresses.value_by_name(x))
         print("List of neighbours: " + str(addr_list))
-        #print(self.neighbours)
 
 
 class MapEdge(QGraphicsPixmapItem):
-    def __init__(self, x1, y1, x2, y2, front):
+    def __init__(self):
         super().__init__(QPixmap('img\edge.png'))
         self.rotate = 0
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
@@ -71,6 +67,8 @@ class MapEdge(QGraphicsPixmapItem):
         if e.button() == Qt.RightButton and self.isSelected():
             print("Right mouse pressed")
             ex.vScene.removeItem(self)
+        #elif e.button() == Qt.LeftButton and self.isSelected():
+        #    self.checkConnections()
 
     def mouseDoubleClickEvent(self, *args, **kwargs):
         self.rotate += 30
@@ -81,24 +79,31 @@ class MapEdge(QGraphicsPixmapItem):
 
     def checkConnections(self):
         self.setPixmap(QPixmap('img\edge.png'))
-        #for x in self.neighbours:
-        #   addresses.remove_name(str(x))
+        #self.setFlag(QGraphicsItem.ItemIsMovable, True)
+
+        # remove current neighbour nodes
+        if len(self.neighbours) > 1:
+            addresses.remove_edge(self.neighbours[0], self.neighbours[1])
+            addresses.remove_edge(self.neighbours[1], self.neighbours[0])
 
         self.neighbours = []
         for item in ex.vScene.items():
             if self.collidesWithItem(item) and self != item:
-                print("Edge Connected !")
-                self.setPixmap(QPixmap('img\edgeConnected.png'))
                 # add neighbour to list
                 address = addresses.value_by_name(str(id(item)))
-                print(address)
+                #print(address)
                 self.neighbours.append(address)
 
+        print(len(self.neighbours))
         if len(self.neighbours) > 1:
             # add neighbours to dictionary
             addresses.add_node_neighbour(self.neighbours[0], self.neighbours[1])
             addresses.add_node_neighbour(self.neighbours[1], self.neighbours[0])
-            self.setFlag(QGraphicsItem.ItemIsMovable, False)
+            #self.setFlag(QGraphicsItem.ItemIsMovable, False)
+            self.setPixmap(QPixmap('img\edgeConnected.png'))
+            print("Edge Connected !")
+        else:
+            print("Edge Disconnected !")
 
 
 class Button(QPushButton):
@@ -123,7 +128,7 @@ class Button(QPushButton):
             print('press')
             pic = QPixmap(self.iconFile)
             if self.name == 'Edge':
-                new_item = MapEdge(mouse_pos[0], mouse_pos[1], 50, 50, 0)
+                new_item = MapEdge()
             else:
                 new_item = MapIcon(pic)
             ex.vScene.addItem(new_item)
@@ -140,6 +145,9 @@ class NetworkGraph(QGraphicsView):
         self.setGeometry(0, 0, 512, 768)
         self.show()
 
+    #def remove_item(self):
+    ##    for item in ex.vScene.items():
+     #       if
 
 class Example(QWidget):
     menu_buttons = []
@@ -154,16 +162,24 @@ class Example(QWidget):
 
         # set control buttons
         self.menuLayout.addWidget(QLabel("Control Menu"))
-        self.menuLayout.addWidget(QPushButton(QIcon(QPixmap("img\play.png")), "Play"))
-        self.menuLayout.addWidget(QPushButton(QIcon(QPixmap("img\stop.png")), "Stop"))
-        self.menuLayout.addWidget(QPushButton(QIcon(QPixmap("img\pause.png")), "Pause"))
-        self.menuLayout.addWidget(QPushButton(QIcon(QPixmap('img\\next.png')), "Next"))
+
+        deleteButton = QPushButton()
+        deleteButton.setIcon(QIcon("img\\delete.png"))
+        deleteButton.setFixedSize(35, 35)
+
+        self.menuLayout.addWidget(deleteButton)
+
+       # self.menuLayout.addWidget(QPushButton(QIcon(QPixmap("img\\play.png")), "Play"))
+       # self.menuLayout.addWidget(QPushButton(QIcon(QPixmap("img\\stop.png")), "Stop"))
+       # self.menuLayout.addWidget(QPushButton(QIcon(QPixmap("img\\pause.png")), "Pause"))
+       # self.menuLayout.addWidget(QPushButton(QIcon(QPixmap('img\\next.png')), "Next"))
 
         # set menu buttons
         router_button = Button('Router', "img\\router.png")
-        tablet_button = Button('Tablet', "img\Tablet.png")
-        computer_button = Button('Computer', "img\Computer.png")
-        edge_button = Button('Edge', "img\edge.png")
+        tablet_button = Button('Tablet', "img\\Tablet.png")
+        phone_button = Button('Phone', "img\\")
+        computer_button = Button('Computer', "img\\Computer.png")
+        edge_button = Button('Edge', "img\\edge.png")
 
         self.menuLayout.addWidget(QLabel("Network Devices"))
         self.menuLayout.addWidget(router_button)
@@ -215,6 +231,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    open("debug.log", "w").close()
     addresses = address_db.AddressDictionary()
     ex = MainWindow()
     ex.show()
