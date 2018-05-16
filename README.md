@@ -13,7 +13,7 @@ long term goals:
 add startegy pattern for message processing in workers_consume  
 
 low priority:  
-replace if-then-else pattern in sender command menu  
+replace if-then-else pattern in sender command menu  - in work
 replace if-then-else pattern in worker action menu and add basic functionality  
 add error handling  
 add logging module  
