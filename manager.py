@@ -80,16 +80,45 @@ class worker_manager(manager):
 class control_manager(manager):
     def __init__(self,mq_server_address, exchange_name, exchange_type, routing_key):
         super(control_manager, self).__init__(mq_server_address, exchange_name, exchange_type, routing_key)
-        self.kill = False
+        self._kill = False
 
         # bind worker to control exchange
         self.channel.queue_bind(exchange=self.exchange_name,
                                 queue=self.queue_name,
                                 routing_key=self.routing_key)
 
-        #self.menudict = {''}
+        self.menudict = {'kill':self.kill,
+                         'send':self.sendmsg}
+
+    def executor(self, args, strategy=None):
+        if strategy:
+            strategy(args)
+        else:
+            print('Strategy not set')
+
+    def kill(self,args):
+        print(args)
+        self._kill = True
+
+    def sendmsg(self,args):
+        msg = {'source': self.routing_key,
+               'destination': args[1],
+               'TTL': 3,
+               'data': ' '.join(args[1:])}
+
+        print("sending:")
+        print(msg)
+
+        msg = pickle.dumps(msg)
+
+        self.send(self.routing_key, msg, 'workers')
 
     def callback(self,ch, method, properties, body):
+        args = body.decode()
+        args = args.split()
+        self.executor(args,self.menudict[args[0]])
+        """
+
         message = body.decode()
         message = message.split()
         print("im here")
@@ -115,6 +144,9 @@ class control_manager(manager):
 
         else:
             print(" [x] %r:%r" % (method.routing_key, body))
+        """
+    # temporary dictionary/strategy based commands, need to encapsulate in class
+
 
 
 

@@ -40,7 +40,7 @@ workers_thread.start()
 
 while True:
     time.sleep(3)
-    if control_manager.kill == True:
+    if control_manager._kill == True:
         control_manager.channel.stop_consuming()
         worker_manager.channel.stop_consuming()
         break
