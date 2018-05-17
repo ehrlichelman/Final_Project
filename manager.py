@@ -1,7 +1,8 @@
 import pika
 import pickle
 
-class manager(object):
+
+class Manager(object):
     def __init__(self, mq_server_address, exchange_name, exchange_type, routing_key):
 
         self.exchange_name = exchange_name
@@ -18,7 +19,6 @@ class manager(object):
         result = self.channel.queue_declare(exclusive=True)
         self.queue_name = result.method.queue
 
-
         self.channel.basic_consume(self.callback,
                                    queue=self.queue_name,
                                    no_ack=True)
@@ -29,13 +29,12 @@ class manager(object):
                                     body=message)
 
 
-class worker_manager(manager):
+class WorkerManager(Manager):
     def __init__(self,mq_server_address, exchange_name, exchange_type, routing_key):
-        super(worker_manager, self).__init__(mq_server_address, exchange_name, exchange_type, routing_key)
+        super(WorkerManager, self).__init__(mq_server_address, exchange_name, exchange_type, routing_key)
 
     def callback(self,ch, method, properties, body):
         self.executor(pickle.loads(body), self.basic_strategy)
-
 
     # bind worker to neighbour queue
     def bind(self,routing_key):
@@ -43,26 +42,22 @@ class worker_manager(manager):
                                    queue=self.queue_name,
                                    routing_key=routing_key)
 
-
-    # unbind worker from neighbout queue
+    # unbind worker from neighbour queue
     def unbind(self,routing_key):
         self.channel.queue_unbind(exchange=self.exchange_name,
                                    queue=self.queue_name,
                                    routing_key=routing_key)
-
 
     # bind worker to a list of neighbours
     def bind_neighbours(self,neighbours):
         for neighbour in neighbours:
             self.bind(neighbour)
 
-
     def executor(self, message, strategy=None):
         if strategy:
             strategy(message)
         else:
             print("strategy not set")
-
 
     def basic_strategy(self,message):
         if message['destination']==self.routing_key:
@@ -77,10 +72,10 @@ class worker_manager(manager):
                 print("TTL equals zero, dropping message")
 
 
-class control_manager(manager):
+class ControlManager(Manager):
     def __init__(self,mq_server_address, exchange_name, exchange_type, routing_key):
-        super(control_manager, self).__init__(mq_server_address, exchange_name, exchange_type, routing_key)
-        self._kill = False
+        super(ControlManager, self).__init__(mq_server_address, exchange_name, exchange_type, routing_key)
+        self.killme = False
 
         # bind worker to control exchange
         self.channel.queue_bind(exchange=self.exchange_name,
@@ -98,7 +93,7 @@ class control_manager(manager):
 
     def kill(self,args):
         print(args)
-        self._kill = True
+        self.killme = True
 
     def sendmsg(self,args):
         msg = {'source': self.routing_key,
@@ -117,39 +112,12 @@ class control_manager(manager):
         args = body.decode()
         args = args.split()
         self.executor(args,self.menudict[args[0]])
-        """
-
-        message = body.decode()
-        message = message.split()
-        print("im here")
-        if message[0] == 'kill':
-            self.kill = True
-        if message[0] == 'send':
-
-
-            # message serialization test
-
-            msg = {'source':self.routing_key,
-                   'destination':message[1],
-                   'TTL':3,
-                   'data':' '.join(message[1:])}
-
-            print("sending:")
-            print(msg)
-
-
-            msg=pickle.dumps(msg)
-
-            self.send(self.routing_key,msg,'workers')
-
-        else:
-            print(" [x] %r:%r" % (method.routing_key, body))
-        """
-    # temporary dictionary/strategy based commands, need to encapsulate in class
-
-
 
 
 if __name__ == 'main':
-    tester = control_manager("127.0.0.1","test_exchange", "direct", "tester1")
+    tester = ControlManager("127.0.0.1","test_exchange", "direct", "tester1")
     print(tester)
+
+# add 'static' decorator to executor functions ?
+# static method -> can run with class instatination
+

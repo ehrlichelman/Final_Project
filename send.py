@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import pika
-import sys
-# import cmdshell
 import cmd
+
 
 class SimulationShell(cmd.Cmd):
     intro = 'Network simulation shell'
@@ -24,7 +23,6 @@ class SimulationShell(cmd.Cmd):
         print('killing worker:', args[0])
         send(args[0], 'kill')
 
-
     def do_exit(self,args):
         print('now exiting shell')
         return True
@@ -34,11 +32,9 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost')
 channel = connection.channel()
 
 
-#control exchange between user and workers.
+# control exchange between user and workers.
 channel.exchange_declare(exchange='control',
                          exchange_type='topic')
-
-
 
 
 def send(routing_key, message):
