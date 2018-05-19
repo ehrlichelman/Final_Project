@@ -18,7 +18,7 @@ class MapIcon(QGraphicsPixmapItem):
         addresses.add_name_addr(str(id(self)))
         # print(str(id(self)))
         address = addresses.value_by_name(str(id(self)))
-        print("New Item! Address: " + address)
+        print("New Item! ID: "+str(id(self))+" Address: " + address)
 
     def mousePressEvent(self, e):
         if e.button() == Qt.RightButton and self.isSelected():
@@ -34,24 +34,10 @@ class MapIcon(QGraphicsPixmapItem):
             addresses.remove_name(str(id(self)))
 
     def mouseDoubleClickEvent(self, *args, **kwargs):
-        self.getNeighboursList()
+        self.printNeighboursList()
 
-    def getNeighboursList(self):
-        address = addresses.value_by_name(str(id(self)))
-        addresses.print_node_neighbours(address)
-
-    def checkConnections(self):
-        # reset neighbours list
-        self.neighbours = []
-        addr_list = []
-        for item in ex.vScene.items():
-            if self.collidesWithItem(item) and self != item:
-                # add neighbour to list
-                self.neighbours.append(id(item))
-
-        for x in self.neighbours:
-            addr_list.append(addresses.value_by_name(x))
-        print("List of neighbours: " + str(addr_list))
+    def printNeighboursList(self):
+        addresses.print_node_neighbours(str(id(self)))
 
 
 class MapEdge(QGraphicsPixmapItem):
@@ -78,29 +64,26 @@ class MapEdge(QGraphicsPixmapItem):
         self.checkConnections()
 
     def checkConnections(self):
-        self.setPixmap(QPixmap('img\edge.png'))
+        self.setPixmap(QPixmap('img\\edge.png'))
         #self.setFlag(QGraphicsItem.ItemIsMovable, True)
 
         # remove current neighbour nodes
         if len(self.neighbours) > 1:
             addresses.remove_edge(self.neighbours[0], self.neighbours[1])
-            addresses.remove_edge(self.neighbours[1], self.neighbours[0])
 
         self.neighbours = []
         for item in ex.vScene.items():
             if self.collidesWithItem(item) and self != item:
                 # add neighbour to list
-                address = addresses.value_by_name(str(id(item)))
-                #print(address)
-                self.neighbours.append(address)
+                #address = addresses.value_by_name(str(id(item)))
+                self.neighbours.append(str(id(item)))
 
         print(len(self.neighbours))
         if len(self.neighbours) > 1:
             # add neighbours to dictionary
             addresses.add_node_neighbour(self.neighbours[0], self.neighbours[1])
-            addresses.add_node_neighbour(self.neighbours[1], self.neighbours[0])
             #self.setFlag(QGraphicsItem.ItemIsMovable, False)
-            self.setPixmap(QPixmap('img\edgeConnected.png'))
+            self.setPixmap(QPixmap('img\\edgeConnected.png'))
             print("Edge Connected !")
         else:
             print("Edge Disconnected !")
@@ -145,9 +128,6 @@ class NetworkGraph(QGraphicsView):
         self.setGeometry(0, 0, 512, 768)
         self.show()
 
-    #def remove_item(self):
-    ##    for item in ex.vScene.items():
-     #       if
 
 class Example(QWidget):
     menu_buttons = []
@@ -187,8 +167,6 @@ class Example(QWidget):
         self.menuLayout.addWidget(computer_button)
         self.menuLayout.addWidget(edge_button)
 
-        #self.menuLayout.addLayout(self.gridLayout)
-
         self.initUI()
 
     def initUI(self):
@@ -201,10 +179,10 @@ class Example(QWidget):
         self.dragOver = True
         print('Drag Enter Event')
 
-    def mouseReleaseEvent(self, e):
-        print(e.x())
-        print(e.y())
-        mouse_pos = [e.x(), e.y()]
+    #def mouseReleaseEvent(self, e):
+    #    print(e.x())
+    #    print(e.y())
+    #    mouse_pos = [e.x(), e.y()]
 
     def dragMoveEvent(self, e):
         print('Drag')
@@ -231,9 +209,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    open("debug.log", "w").close()
     addresses = address_db.AddressDictionary()
     ex = MainWindow()
     ex.show()
     app.exec_()
-    addresses.drop_db()
