@@ -43,7 +43,6 @@ class AddressDictionary:
     # returns node address
     def value_by_name(self, name):
         address = str(self.address_dict.get(name))[2:-1]
-        #print('address: ' + address)
         return address
 
     # returns list of addresses for nodes
@@ -76,17 +75,19 @@ class AddressDictionary:
             self.remove_edge(x[2:-1], node[2:-1])
 
     def print_node_neighbours(self, name):
-        neighbours = str(self.redis_db.smembers(name))#.replace("b'", "").replace("'", "")
+        output_str = ""
         neighbours_l = self.node_neighbours_list(name)
-        #address = redis_data.value_by_name(name)
-        print('Node ID: ' + name + ' Neighbours: ' + neighbours)
-        print('Node Address: ' + str(self.value_by_name(name)))
+        output_str += 'Node ID: ' + name + ' Address: ' + str(self.value_by_name(name) + "\n")
+        output_str += "{"
         for x in neighbours_l:
-            print('Neighbour : ' + x + ' Address: ' + self.value_by_name(x))
+            output_str += ' Neighbour ID: ' + x + ' Address: ' + self.value_by_name(x) + "\n"
+        output_str += "}"
+        print(output_str)
+        return output_str
 
     def node_neighbours_list(self, node):
-        neighbours_l = str(self.redis_db.smembers(node)).replace("b'", "").replace("'", "").split(", ")
-        return neighbours_l
+        neighbours_l = str(self.redis_db.smembers(node)).replace("b'", "").replace("}", "").replace("{", "")
+        return neighbours_l.replace("'", "").split(", ")[1:]
 
     def drop_db(self):
         self.redis_db.flushall()
@@ -108,6 +109,7 @@ if __name__ == '__main__':
             address = redis_data.value_by_name(name)
             if address != 'n':
                 print('Address: ' + address)
+                redis_data.print_node_neighbours(name)
             else:
                 print("Node Doesn't exist")
         elif user_input == 4:
