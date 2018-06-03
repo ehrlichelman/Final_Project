@@ -1,6 +1,8 @@
 import pika
 import pickle
+import logging
 
+logging.basicConfig(filename="debug.log", level=logging.INFO)
 
 class Manager(object):
     def __init__(self, mq_server_address, exchange_name, exchange_type, routing_key):
@@ -60,15 +62,20 @@ class WorkerManager(Manager):
             print("strategy not set")
 
     def basic_strategy(self,message):
+        logging.info("node {} received message".format(self.routing_key))
         if message['destination']==self.routing_key:
+            logging.info("received message:")
+            logging.info(message)
             print("received message:")
             print(message)
         else:
             if message['TTL'] > 0:
+                logging.info("message is not for me. decreasing TTL and forwarding.")
                 print("message is not for me. decreasing TTL and forwarding.")
                 message['TTL']-=1
                 self.send(self.routing_key, pickle.dumps(message) ,'workers')
             else:
+                logging.info("TTL equals zero, dropping message")
                 print("TTL equals zero, dropping message")
 
 
@@ -101,9 +108,11 @@ class ControlManager(Manager):
                'TTL': 3,
                'data': ' '.join(args[1:])}
 
+        logging.info("sending:")
+        logging.info(msg)
+
         print("sending:")
         print(msg)
-
         msg = pickle.dumps(msg)
 
         self.send(self.routing_key, msg, 'workers')
@@ -120,4 +129,3 @@ if __name__ == 'main':
 
 # add 'static' decorator to executor functions ?
 # static method -> can run with class instatination
-

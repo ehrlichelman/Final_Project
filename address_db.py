@@ -2,7 +2,7 @@ import redis
 import random
 import logging
 
-logging.basicConfig(filename="debug.log", level=logging.DEBUG)
+logging.basicConfig(filename="debug.log", level=logging.INFO)
 
 
 class AddressDictionary:
@@ -15,7 +15,7 @@ class AddressDictionary:
         # initialize address dictionary database
         self.address_dict = redis.Redis(host="localhost", port=6379, db=1)
         self.address_dict.flushall()
-        logging.debug('Initializing list of 3 bytes addresses: ')
+        logging.info('Initializing list of 3 bytes addresses: ')
         for i in range(100):
             rand_addr = ''.join(random.choice('0123456789ABCDEF') for i in range(3))
             self.redis_db.sadd('addr_list', rand_addr)
@@ -25,7 +25,7 @@ class AddressDictionary:
         self.redis_db.srem('addr_list', addr)
         self.redis_db.sadd(name, '')
         self.address_dict.set(name, addr)
-        logging.debug('New device added, id: {} '
+        logging.info('New device added, id: {} '
                       'address: {}'.format(name, str(addr)[2:-1]))
 
     # remove device from network
@@ -37,7 +37,7 @@ class AddressDictionary:
         # remove node from address dictionary
         self.address_dict.delete(name)
         self.redis_db.sadd('addr_list', addr)
-        logging.debug('Device removed, id: {} '
+        logging.info('Device removed, id: {} '
                       'address: {}'.format(name, str(addr)[2:-1]))
 
     # returns node address
@@ -58,14 +58,14 @@ class AddressDictionary:
         self.redis_db.sadd(node, neighbour)
         self.redis_db.sadd(neighbour, node)
         self.print_node_neighbours(node)
-        logging.debug('Added neighbour for node: {}, neighbour: {} '.format(node, neighbour))
+        logging.info('Added neighbour for node: {}, neighbour: {} '.format(node, neighbour))
 
     # remove connecting edge between nodes
     def remove_edge(self, node, neighbour):
         self.redis_db.srem(node, neighbour)
         self.redis_db.srem(neighbour, node)
-        logging.debug('Removed neighbour for node: {}, neighbour: {} '.format(node, neighbour))
-        logging.debug('Removed neighbour for node: {}, neighbour: {} '.format(neighbour, node))
+        logging.info('Removed neighbour for node: {}, neighbour: {} '.format(node, neighbour))
+        logging.info('Removed neighbour for node: {}, neighbour: {} '.format(neighbour, node))
 
     # disconnect node from all neighbours
     def remove_node_neighbours(self, node):
@@ -89,15 +89,22 @@ class AddressDictionary:
         neighbours_l = str(self.redis_db.smembers(node)).replace("b'", "").replace("}", "").replace("{", "")
         return neighbours_l.replace("'", "").split(", ")[1:]
 
+    def print_all_nodes(self):
+        nodes_l = str(self.redis_db.keys()).replace("b'", "")
+        nodes_l = nodes_l.replace("'", "").replace(", addr_list", "")
+        nodes_l = nodes_l.replace("[", "").replace("]", "").replace(" ","")
+        return nodes_l.split(",")
+
     def drop_db(self):
         self.redis_db.flushall()
-        logging.debug('Dropped database...')
+        logging.info('Dropped database...')
 
 
 if __name__ == '__main__':
     redis_data = AddressDictionary()
     while True:
-        user_input = int(input('1 - add, 2 - remove, 3 - find by name, 4 - add neighbour, 5 - remove neighbour: \n'))
+        user_input = int(input('1 - add, 2 - remove, 3 - find by name,' +
+        '4 - add neighbour, 5 - remove neighbour, 6 - all nodes: \n'))
         if user_input == 1:
             name = input('enter name:')
             redis_data.add_name_addr(name)
@@ -120,6 +127,7 @@ if __name__ == '__main__':
             node = input('enter node name:')
             neighbour = input('enter neighbour name:')
             redis_data.remove_edge(node, neighbour)
+        elif user_input == 6:
+            print(redis_data.print_all_nodes())
         else:
             break
-

@@ -25,6 +25,13 @@ class NodeProcess:
             args.append(x)
         subprocess.Popen(args)
 
+    def kill_all_nodes(self):
+        for x in self.nodeList:
+            self.sender.do_kill(x)
+        time.sleep(2)
+        self.nodeList = []
+        #self.sender.do_exit(' ')
+
 
 if __name__ == '__main__':
     # this is for test purposes
@@ -35,3 +42,4 @@ if __name__ == '__main__':
     manager.new_node_process('worker5', ['worker4'])
     time.sleep(5)
     manager.send_msg('worker1', 'worker5', 'this is a test message')
+    manager.kill_all_nodes()
