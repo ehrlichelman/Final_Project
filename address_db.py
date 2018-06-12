@@ -1,21 +1,26 @@
+#!/usr/bin/env python
 import redis
 import random
 import logging
+from datetime import datetime
 
-logging.basicConfig(filename="debug.log", level=logging.INFO)
+#logging.basicConfig(filename="debug.log", level=logging.INFO)
 
+def get_time():
+    return datetime.now().strftime("%H:%M:%S.%f")
 
 class AddressDictionary:
     def __init__(self):
         # clear debug file
-        open("debug.log", "w").close()
+        #open("debug.log", "w").close()
         # initialize neighbours database
         self.redis_db = redis.Redis(host="localhost", port=6379, db=0)
         self.drop_db()
         # initialize address dictionary database
         self.address_dict = redis.Redis(host="localhost", port=6379, db=1)
         self.address_dict.flushall()
-        logging.info('Initializing list of 3 bytes addresses: ')
+        str_time = get_time()
+        #logging.info('{}: Initializing list of 3 bytes addresses: '.format(str_time))
         for i in range(100):
             rand_addr = ''.join(random.choice('0123456789ABCDEF') for i in range(3))
             self.redis_db.sadd('addr_list', rand_addr)
@@ -25,8 +30,9 @@ class AddressDictionary:
         self.redis_db.srem('addr_list', addr)
         self.redis_db.sadd(name, '')
         self.address_dict.set(name, addr)
-        logging.info('New device added, id: {} '
-                      'address: {}'.format(name, str(addr)[2:-1]))
+        str_time = get_time()
+        #logging.info('{}: New device added, id: {} '
+        #              'address: {}'.format(str_time, name, str(addr)[2:-1]))
 
     # remove device from network
     def remove_name(self, name):
@@ -37,8 +43,9 @@ class AddressDictionary:
         # remove node from address dictionary
         self.address_dict.delete(name)
         self.redis_db.sadd('addr_list', addr)
-        logging.info('Device removed, id: {} '
-                      'address: {}'.format(name, str(addr)[2:-1]))
+        str_time = get_time()
+        #logging.info('{}: Device removed, id: {} '
+        #              'address: {}'.format(str_time, name, str(addr)[2:-1]))
 
     # returns node address
     def value_by_name(self, name):
@@ -58,14 +65,16 @@ class AddressDictionary:
         self.redis_db.sadd(node, neighbour)
         self.redis_db.sadd(neighbour, node)
         self.print_node_neighbours(node)
-        logging.info('Added neighbour for node: {}, neighbour: {} '.format(node, neighbour))
+        str_time = get_time()
+        #logging.info('{}: Added neighbour for node: {}, neighbour: {} '.format(str_time, node, neighbour))
 
     # remove connecting edge between nodes
     def remove_edge(self, node, neighbour):
         self.redis_db.srem(node, neighbour)
         self.redis_db.srem(neighbour, node)
-        logging.info('Removed neighbour for node: {}, neighbour: {} '.format(node, neighbour))
-        logging.info('Removed neighbour for node: {}, neighbour: {} '.format(neighbour, node))
+        str_time = get_time()
+        #logging.info('{}: Removed neighbour for node: {}, neighbour: {} '.format(str_time, node, neighbour))
+        #logging.info('{}: Removed neighbour for node: {}, neighbour: {} '.format(str_time, neighbour, node))
 
     # disconnect node from all neighbours
     def remove_node_neighbours(self, node):
@@ -97,7 +106,8 @@ class AddressDictionary:
 
     def drop_db(self):
         self.redis_db.flushall()
-        logging.info('Dropped database...')
+        str_time = get_time()
+        #logging.info('{}: Dropped database...'.format(str_time))
 
 
 if __name__ == '__main__':

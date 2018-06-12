@@ -2,13 +2,16 @@
 import pika
 import cmd
 import logging
-
+from datetime import datetime
 
 logging.basicConfig(filename="debug.log", level=logging.INFO)
 
+def get_time():
+    return datetime.now().strftime("%H:%M:%S.%f")
+
 class SimulationSend:
     def __init__(self):
-        #open("result.log", "w").close()
+        open("debug.log", "w").close()
         #super(SimulationSend, self).__init__()
         #intro = 'Network simulation shell'
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -17,7 +20,8 @@ class SimulationSend:
         # control exchange between user and workers.
         self.channel.exchange_declare(exchange='control',
                                  exchange_type='topic')
-        logging.info('Initializing message broker ')
+        str_time = get_time()
+        logging.info('{}: Initializing message broker '.format(str_time))
 
     def do_send(self, args):
         if len(args) < 2:
@@ -29,13 +33,15 @@ class SimulationSend:
             message = ' '.join(args[1:])
             message = 'send '+message
             print('{} sends to {} : {}'.format(routing_key,args[1],args[2:]))
-            logging.info('{} sends to {} : {}'.format(routing_key,args[1],args[2:]))
+            str_time = get_time()
+            logging.info('{}: {} sends to {} : {}'.format(str_time,routing_key,args[1],args[2:]))
             self.send(routing_key, message)
 
     def do_kill(self, node):
         #args = args.split()
         print('killing worker:', node)
-        logging.info('killing worker: {}'.format(node))
+        str_time = get_time()
+        logging.info('{}: killing worker: {}'.format(str_time,node))
         self.send(node, 'kill')
 
     def do_exit(self,args):

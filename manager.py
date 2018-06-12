@@ -1,8 +1,12 @@
 import pika
 import pickle
 import logging
+from datetime import datetime
 
 logging.basicConfig(filename="debug.log", level=logging.INFO)
+
+def get_time():
+    return datetime.now().strftime("%H:%M:%S.%f")
 
 class Manager(object):
     def __init__(self, mq_server_address, exchange_name, exchange_type, routing_key):
@@ -62,20 +66,24 @@ class WorkerManager(Manager):
             print("strategy not set")
 
     def basic_strategy(self,message):
-        logging.info("node {} received message".format(self.routing_key))
+        str_time = get_time()
+        #logging.info("{}: node {} received message".format(str_time,self.routing_key))
         if message['destination']==self.routing_key:
-            logging.info("received message:")
+            str_time = get_time()
+            logging.info("{}: received message:".format(str_time))
             logging.info(message)
             print("received message:")
             print(message)
         else:
             if message['TTL'] > 0:
-                logging.info("message is not for me. decreasing TTL and forwarding.")
+                str_time = get_time()
+                logging.info("{}: message is not for me. decreasing TTL and forwarding.".format(str_time))
                 print("message is not for me. decreasing TTL and forwarding.")
                 message['TTL']-=1
                 self.send(self.routing_key, pickle.dumps(message) ,'workers')
             else:
-                logging.info("TTL equals zero, dropping message")
+                str_time = get_time()
+                logging.info("{}: TTL equals zero, dropping message".format(str_time))
                 print("TTL equals zero, dropping message")
 
 
@@ -107,12 +115,11 @@ class ControlManager(Manager):
                'destination': args[1],
                'TTL': 3,
                'data': ' '.join(args[1:])}
-
-        logging.info("sending:")
+        str_time = get_time()
+        logging.info("{}: sending:".format(str_time))
         logging.info(msg)
 
-        print("sending:")
-        print(msg)
+        print("{}: sending:{}".format(str_time,msg))
         msg = pickle.dumps(msg)
 
         self.send(self.routing_key, msg, 'workers')
