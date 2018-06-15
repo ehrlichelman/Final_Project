@@ -1,6 +1,6 @@
 import sys
 import address_db
-import node_process
+import node_process, log_analyzer
 import shlex, subprocess
 import os
 import time
@@ -20,6 +20,9 @@ def start_send():
         dst = ex.dst
         data = ex.dataText.text()
 
+        if ex.add_delay:
+            data += 'ADD_DELAY'
+
         print(ex.selected_item)
         print('start send button works!')
         node_list = addresses.print_all_nodes()
@@ -30,9 +33,24 @@ def start_send():
         time.sleep(3)
         # start sending message through nodes
         send_rcv_msg.send_msg(src, dst, data)
+
+        ex.statusBar().showMessage("Sending message to destination...", 6000)
+        if ex.add_delay:
+            time.sleep(9)
         time.sleep(3)
         # destroy all node processes
         send_rcv_msg.kill_all_nodes()
+
+# add network congestion
+def addDelay():
+    if ex.delayCheckBox.isChecked():
+        ex.add_delay = True
+    else:
+        ex.add_delay = False
+
+# display performance logger
+def showPerformanceLog():
+    network_log = log_analyzer.LogAnalyzer()
 
 # remove node from network
 def selectItemToDelete():
@@ -53,7 +71,6 @@ def selectSourceNode():
             ex.statusBar().removeWidget(ex.sourceLabel)
             ex.sourceLabel = QLabel("Source ID: " + str(id(item)))
             ex.statusBar().addWidget(ex.sourceLabel)
-            #ex.statusBar.show()
             return
 
 # select destination node
@@ -74,13 +91,19 @@ def selectDestinationNode():
 
             ex.statusBar().removeWidget(ex.dataLabel)
             ex.statusBar().removeWidget(ex.dataText)
+            ex.statusBar().removeWidget(ex.delayCheckBox)
 
             ex.dataLabel = QLabel("Data: ")
             ex.dataText = QLineEdit()
             ex.dataText.resize(150, 40)
 
+            ex.delayCheckBox = QCheckBox('Network Congestion')
+            ex.delayCheckBox.stateChanged.connect(addDelay)
+
             ex.statusBar().addWidget(ex.dataLabel)
             ex.statusBar().addWidget(ex.dataText)
+            ex.statusBar().addWidget(ex.delayCheckBox)
+
             return
 
 """Network map graphical node, represents devices and access points"""
@@ -227,6 +250,12 @@ class Example(QWidget):
         selectDestButton.clicked.connect(selectDestinationNode)
         self.menuLayout.addWidget(selectDestButton)
 
+        showLogButton = QPushButton()
+        showLogButton.setIcon(QIcon("img//log.png"))
+        showLogButton.setFixedSize(ICON_SIZE, ICON_SIZE)
+        showLogButton.clicked.connect(showPerformanceLog)
+        self.menuLayout.addWidget(showLogButton)
+
         # set menu buttons
         router_button = Button('Router', "img//router.png")
         tablet_button = Button('Tablet', "img//tablet.png")
@@ -267,6 +296,7 @@ class MainWindow(QMainWindow):
         self.src = -1
         self.dst = -1
         self.data = 'FFF'
+        self.add_delay = False
 
         self.sourceLabel = QLabel("Source: ")
         self.destinationLabel = QLabel("Destination: ")
@@ -274,6 +304,9 @@ class MainWindow(QMainWindow):
 
         self.dataText = QLineEdit()
         self.dataText.resize(150, 40)
+
+        self.delayCheckBox = QCheckBox('Network Congestion')
+        self.delayCheckBox.stateChanged.connect(addDelay)
 
         self.vScene = QGraphicsScene()
         self.vGraphicsView = NetworkGraph()
@@ -292,6 +325,8 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Add a network device by clicking on one of the buttons right to Network Devices", 2000)
         self.statusBar().addWidget(self.dataLabel)
         self.statusBar().addWidget(self.dataText)
+        self.statusBar().addWidget(self.delayCheckBox)
+
 
         self.setAnimated(True)
 

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import re
 
-NETWORK_RUN_TIME = 50
+NETWORK_RUN_TIME = 2500
 regex = r"(INFO:root).*(received|dropping|forwarding).*"
 
 
@@ -18,7 +18,7 @@ class LogAnalyzer:
             str_line = re.match(regex, line)
             if str_line is not None:
                 milli_count = str_line.group(0)
-                self.log_list[int(milli_count[19:21])] +=1
+                self.log_list[int(milli_count[19:22])] +=1
 
     def create_graph(self):
         fig = plt.figure()

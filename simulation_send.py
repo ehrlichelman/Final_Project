@@ -2,6 +2,8 @@
 import pika
 import cmd
 import logging
+import time
+from random import *
 from datetime import datetime
 
 logging.basicConfig(filename="debug.log", level=logging.INFO)
@@ -28,13 +30,16 @@ class SimulationSend:
             print('invalid syntax')
             return
         else:
+            delay_time = 0
             args = args.split()
             routing_key = args[0]
             message = ' '.join(args[1:])
             message = 'send '+message
+
             print('{} sends to {} : {}'.format(routing_key,args[1],args[2:]))
             str_time = get_time()
             logging.info('{}: {} sends to {} : {}'.format(str_time,routing_key,args[1],args[2:]))
+            #time.sleep(delay_time)
             self.send(routing_key, message)
 
     def do_kill(self, node):
